@@ -840,13 +840,13 @@ public abstract class AbstractQueuedSynchronizer
      * @return {@code true} if thread should block
      */
     private static boolean shouldParkAfterFailedAcquire(Node pred, Node node) {
-        //获取前置节点的waitStatus
+        //获取前置节点的waitStatus，如果是SIGNAL，在realse或者cancel时会唤醒它的后继者
         int ws = pred.waitStatus;
         if (ws == Node.SIGNAL)
             /*
              * This node has already set status asking a release
              * to signal it, so it can safely park.
-             * 如过前一个节点是
+             * 当前节点已经设置了状态请求一个realse来唤醒它，所以可以安全的阻塞（block）。
              */
             return true;
         if (ws > 0) {
@@ -918,6 +918,10 @@ public abstract class AbstractQueuedSynchronizer
                     return interrupted;
                 }
                 // 如果没有获取锁成功，则进入挂起逻辑
+                //shouldParkAfterFailedAcquire()表示是否可以阻塞，如果有条件可以唤醒它，就可以挂起，否则还执行循环。
+                //parkAndCheckInterrupt（）挂起并检查被挂起线程的中断状态，如果已经被中断了，
+                // 就返回 interrupted = true通过中断唤醒等待线程，否则就挂起等待被唤醒，
+                // 唤醒之后重新循环操作来获取状态。
                 if (shouldParkAfterFailedAcquire(p, node) &&
                     parkAndCheckInterrupt())
                     interrupted = true;
