@@ -293,6 +293,7 @@ import java.util.concurrent.locks.ReadWriteLock;
  * 1.继承自AbstractOwnableSynchronizer，在原来的基础上添加了等待队列和State状态
  * 2.通过State表示线程是否获取到了锁，通过FIFO队列负责控制同时竞争的多个线程。
  * 3.通过ConditionObject对竞争State的线程进行整理，减少同一时刻无用线程对State的竞争。
+ * 4.分为独占和共享两种
  */
 public abstract class AbstractQueuedSynchronizer
     extends AbstractOwnableSynchronizer

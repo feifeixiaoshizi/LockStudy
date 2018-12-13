@@ -36,12 +36,6 @@
 package concurrent.locks;
 
 import java.util.Collection;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.AbstractQueuedSynchronizer;
-import java.util.concurrent.locks.Condition;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * An implementation of {@link ReadWriteLock} supporting similar
@@ -218,6 +212,18 @@ import java.util.concurrent.locks.ReentrantLock;
  *
  * @since 1.5
  * @author Doug Lea
+ * 可重入读写锁（可重入）：提高了读的效率，可以并发同时读。
+ * W（写锁） R（读锁）
+ * 分类讨论：
+ * 1.W（√）   R （x）:写时不能读
+ * 2.W（√）   W （√）：写时也可以读
+ * 3.R（√）   R（√）：读时还可以读
+ * 4.R（√）   W （x）：读时不能写
+ *
+ * 1.封装了Sync负责实现锁的机制，NonfairSync和FairSync提供写锁和读锁。
+ * 2.读锁和写锁内部还是使用了ReentrantReadWriteLock中的Sync来实现锁的功能。
+ * 3.写锁使用了独占模式获取State，读锁使用共享模式获取State。
+ *
  */
 public class ReentrantReadWriteLock
         implements ReadWriteLock, java.io.Serializable {
@@ -265,20 +271,25 @@ public class ReentrantReadWriteLock
          * The lower one representing the exclusive (writer) lock hold count,
          * and the upper the shared (reader) hold count.
          */
-
+        //高16位表示共享锁
         static final int SHARED_SHIFT   = 16;
+        //共享锁的单位值
         static final int SHARED_UNIT    = (1 << SHARED_SHIFT);
+        //最大数量65535 (1111111111111111)
         static final int MAX_COUNT      = (1 << SHARED_SHIFT) - 1;
+        // 65535 (1111111111111111) 低16位表示独占锁的重入次数
         static final int EXCLUSIVE_MASK = (1 << SHARED_SHIFT) - 1;
 
         /** Returns the number of shared holds represented in count. */
         static int sharedCount(int c)    { return c >>> SHARED_SHIFT; }
         /** Returns the number of exclusive holds represented in count. */
+        //
         static int exclusiveCount(int c) { return c & EXCLUSIVE_MASK; }
 
         /**
          * A counter for per-thread read hold counts.
          * Maintained as a ThreadLocal; cached in cachedHoldCounter.
+         * 读锁关联的每个线程的重入次数（*****）
          */
         static final class HoldCounter {
             int count;          // initially 0
@@ -289,6 +300,7 @@ public class ReentrantReadWriteLock
         /**
          * ThreadLocal subclass. Easiest to explicitly define for sake
          * of deserialization mechanics.
+         * 每个线程维持自己的读锁重入次数
          */
         static final class ThreadLocalHoldCounter
             extends ThreadLocal<HoldCounter> {
@@ -301,6 +313,7 @@ public class ReentrantReadWriteLock
          * The number of reentrant read locks held by current thread.
          * Initialized only in constructor and readObject.
          * Removed whenever a thread's read hold count drops to 0.
+         * 多个线程共享ThreadLocal变量，同过ThreadLocal为每个现成提供副本。
          */
         private transient ThreadLocalHoldCounter readHolds;
 
@@ -397,21 +410,25 @@ public class ReentrantReadWriteLock
              *    and set owner.
              */
             Thread current = Thread.currentThread();
+            //是否获取了锁，0表示没有，非0表示获取
             int c = getState();
+            //独占锁的数量（包括重入次数）
             int w = exclusiveCount(c);
             if (c != 0) {
                 // (Note: if c != 0 and w == 0 then shared count != 0)
                 if (w == 0 || current != getExclusiveOwnerThread())
                     return false;
+                //超过重入次数
                 if (w + exclusiveCount(acquires) > MAX_COUNT)
                     throw new Error("Maximum lock count exceeded");
-                // Reentrant acquire
+                // Reentrant acquire 重入
                 setState(c + acquires);
                 return true;
             }
             if (writerShouldBlock() ||
                 !compareAndSetState(c, c + acquires))
                 return false;
+            //设置独占线程
             setExclusiveOwnerThread(current);
             return true;
         }
@@ -470,9 +487,12 @@ public class ReentrantReadWriteLock
              */
             Thread current = Thread.currentThread();
             int c = getState();
+            //如果写线程独占锁，但是现在这个线程不是写线程直接返回-1，不能共享锁。
+            //持有锁的写线程，自己也是可以读的。
             if (exclusiveCount(c) != 0 &&
                 getExclusiveOwnerThread() != current)
                 return -1;
+            //共享锁数量
             int r = sharedCount(c);
             if (!readerShouldBlock() &&
                 r < MAX_COUNT &&
@@ -483,6 +503,7 @@ public class ReentrantReadWriteLock
                 } else if (firstReader == current) {
                     firstReaderHoldCount++;
                 } else {
+                    //通过ThreadLocal存放每个线程的重入次数
                     HoldCounter rh = cachedHoldCounter;
                     if (rh == null || rh.tid != getThreadId(current))
                         cachedHoldCounter = rh = readHolds.get();
@@ -705,6 +726,7 @@ public class ReentrantReadWriteLock
 
     /**
      * The lock returned by method {@link java.util.concurrent.locks.ReentrantReadWriteLock#readLock}.
+     * 通过ThreadLocal记录重入次数。
      */
     public static class ReadLock implements Lock, java.io.Serializable {
         private static final long serialVersionUID = -5992448646407690164L;
@@ -919,6 +941,7 @@ public class ReentrantReadWriteLock
 
     /**
      * The lock returned by method {@link java.util.concurrent.locks.ReentrantReadWriteLock#writeLock}.
+     * 通过int类型的低16为记录重入次数。
      */
     public static class WriteLock implements Lock, java.io.Serializable {
         private static final long serialVersionUID = -4992448646407690164L;
