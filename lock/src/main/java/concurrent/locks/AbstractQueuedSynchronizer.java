@@ -290,6 +290,9 @@ import java.util.concurrent.locks.ReadWriteLock;
  *
  * @since 1.5
  * @author Doug Lea
+ * 1.继承自AbstractOwnableSynchronizer，在原来的基础上添加了等待队列和State状态
+ * 2.通过State表示线程是否获取到了锁，通过FIFO队列负责控制同时竞争的多个线程。
+ * 3.通过ConditionObject对竞争State的线程进行整理，减少同一时刻无用线程对State的竞争。
  */
 public abstract class AbstractQueuedSynchronizer
     extends AbstractOwnableSynchronizer
@@ -860,7 +863,7 @@ public abstract class AbstractQueuedSynchronizer
             pred.next = node;
         } else {
             /*
-             * waitStatus must be 0 or PROPAGATE.  Indicate that we
+             * waitStatus must be 0 or PROPAGATE（传播）.  Indicate that we
              * need a signal, but don't park yet.  Caller will need to
              * retry to make sure it cannot acquire before parking.
              */
@@ -882,9 +885,14 @@ public abstract class AbstractQueuedSynchronizer
      * Convenience method to park and then check if interrupted.
      *
      * @return {@code true} if interrupted
+     * 挂起线程，并判断线程的中断状态
+    （中断状态仅仅是Thread中得一个变量，不会影响到线程的运行，但是可以影响到那些关心这个中断状态的方法，
+    比如wait（）会不断的检测中断状态，一旦发现中断就抛出中断异常，进而通过异常机制间接影响线程的执行流程）
      */
     private final boolean parkAndCheckInterrupt() {
         LockSupport.park(this);
+        //被唤醒之后，返回中断标记，即如果是正常唤醒则返回false，如果是由于中断醒来，就返回true
+        //Thread.interrupted()方法在返回中断标记的同时会清除中断标记
         return Thread.interrupted();
     }
 
@@ -1247,6 +1255,8 @@ public abstract class AbstractQueuedSynchronizer
     public final void acquire(int arg) {
         //如果获取失败了，并且在等待的过程被中断了，就调用中断唤醒自己。
         //重要的是进入到了acquireQueued（）方法中（*****）
+        //如果未获取到，阻塞在acquireQueued（）方法中不断的挂起和唤醒来获取，直到被中断唤醒或者被正常唤醒，
+        // acquire方法返回，线程开始执行。
         if (!tryAcquire(arg) &&
             acquireQueued(addWaiter(Node.EXCLUSIVE), arg))
             selfInterrupt();
@@ -1675,6 +1685,7 @@ public abstract class AbstractQueuedSynchronizer
      * a condition queue, is now waiting to reacquire on sync queue.
      * @param node the node
      * @return true if is reacquiring
+     * 是否在竞争State的队列中
      */
     final boolean isOnSyncQueue(Node node) {
         if (node.waitStatus == Node.CONDITION || node.prev == null)
@@ -1716,6 +1727,7 @@ public abstract class AbstractQueuedSynchronizer
      * @param node the node
      * @return true if successfully transferred (else the node was
      * cancelled before signal)
+     * 从ConditionObject等待线程中转换到同步对列中竞争State获取线程执行权。
      */
     final boolean transferForSignal(Node node) {
         /*
@@ -1890,11 +1902,13 @@ public abstract class AbstractQueuedSynchronizer
         /**
          * Adds a new waiter to wait queue.
          * @return its new wait node
+         * 添加到Condition等待队列尾部
          */
         private Node addConditionWaiter() {
             Node t = lastWaiter;
             // If lastWaiter is cancelled, clean out.
             if (t != null && t.waitStatus != Node.CONDITION) {
+                //清除无用的节点
                 unlinkCancelledWaiters();
                 t = lastWaiter;
             }
@@ -2076,18 +2090,29 @@ public abstract class AbstractQueuedSynchronizer
          *     {@link #acquire} with saved state as argument.
          * <li>If interrupted while blocked in step 4, throw InterruptedException.
          * </ol>
+         * 1.竞争State变量的一个队列，只有获取到了State线程可以执行。
+         * 2.在ConditionObject中的等待队列，等待被唤醒，唤醒之后依然要竞争State变量，获取到了可以执行。
+         * 3.ConditionObject对State的竞争线程进行了归类整理，避免无用的线程也竞争State变量。
+         * 4.要想执行必须获取到State，但是通过conditonObject可以进一步减少无用的竞争线程，
+         * 在竞争前对竞争线程进行了缩减。
          */
         public final void await() throws InterruptedException {
             if (Thread.interrupted())
                 throw new InterruptedException();
+            //添加到该ConditionObject中的等待队列上
             Node node = addConditionWaiter();
+            //放锁
             int savedState = fullyRelease(node);
             int interruptMode = 0;
+            //如果已经在等待锁的对列中了，就表示已经被挂起了。
+            //两个队列：1.竞争State的队列 2.ConditionOb中的队列
             while (!isOnSyncQueue(node)) {
+                //在Condition中的等待队列中被挂起。
                 LockSupport.park(this);
                 if ((interruptMode = checkInterruptWhileWaiting(node)) != 0)
                     break;
             }
+            //从ConditionObjec的等待队列中被唤醒后，加入到竞争State的队列中以便获取锁来执行。（****）
             if (acquireQueued(node, savedState) && interruptMode != THROW_IE)
                 interruptMode = REINTERRUPT;
             if (node.nextWaiter != null) // clean up if cancelled

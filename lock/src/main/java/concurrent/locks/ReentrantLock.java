@@ -37,7 +37,6 @@ package concurrent.locks;
 
 import java.util.Collection;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.AbstractQueuedSynchronizer;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 
@@ -119,6 +118,8 @@ public class ReentrantLock implements java.util.concurrent.locks.Lock, java.io.S
      * Base of synchronization control for this lock. Subclassed
      * into fair and nonfair versions below. Uses AQS state to
      * represent the number of holds on the lock.
+     * 1.继承AbstractQueuedSynchronizer继承了线程等待队列功能
+     * 2.自己仅仅负责在获取成功后设置独占线程，在释放时也设置独占线程为null。
      */
     abstract static class Sync extends AbstractQueuedSynchronizer {
         private static final long serialVersionUID = -5179523762034025860L;
@@ -132,16 +133,19 @@ public class ReentrantLock implements java.util.concurrent.locks.Lock, java.io.S
         /**
          * Performs non-fair tryLock.  tryAcquire is implemented in
          * subclasses, but both need nonfair try for trylock method.
+         * 设置独占线程，表示获取了锁
          */
         final boolean nonfairTryAcquire(int acquires) {
             final Thread current = Thread.currentThread();
             int c = getState();
             if (c == 0) {
+                //通过原子性（CAS）执行state的判断和修改保证setExclusiveOwnerThread（）方法的线程安全
                 if (compareAndSetState(0, acquires)) {
                     setExclusiveOwnerThread(current);
                     return true;
                 }
             }
+            //可重入锁，在原来基础上加1，表示获取了锁
             else if (current == getExclusiveOwnerThread()) {
                 int nextc = c + acquires;
                 if (nextc < 0) // overflow
@@ -152,6 +156,11 @@ public class ReentrantLock implements java.util.concurrent.locks.Lock, java.io.S
             return false;
         }
 
+        /**
+         *
+         * @param releases
+         * @return
+         */
         protected final boolean tryRelease(int releases) {
             int c = getState() - releases;
             if (Thread.currentThread() != getExclusiveOwnerThread())
@@ -159,6 +168,8 @@ public class ReentrantLock implements java.util.concurrent.locks.Lock, java.io.S
             boolean free = false;
             if (c == 0) {
                 free = true;
+                //只有获取到锁的独占线程再可以执行到这里，
+                // 所以这里可以保证setExclusiveOwnerThread（）的线程原子性安全
                 setExclusiveOwnerThread(null);
             }
             setState(c);
@@ -210,6 +221,7 @@ public class ReentrantLock implements java.util.concurrent.locks.Lock, java.io.S
          * acquire on failure.
          */
         final void lock() {
+            //设置独占线程
             if (compareAndSetState(0, 1))
                 setExclusiveOwnerThread(Thread.currentThread());
             else
