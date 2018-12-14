@@ -97,6 +97,9 @@ import java.util.concurrent.TimeUnit;
  * @since 1.5
  * @author Doug Lea
  * @param <V> The result type returned by this Future's {@code get} method
+ * 1.负责取消任务以及判断任务是否取消了
+ * 2.负责从任务获取返回结果
+ * 3.判断任务是否执行完毕
  */
 public interface Future<V> {
 

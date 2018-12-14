@@ -35,14 +35,7 @@
 
 package concurrent;
 
-import java.util.concurrent.Callable;
-import java.util.concurrent.CancellationException;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.concurrent.RunnableFuture;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.LockSupport;
+
 
 /**
  * A cancellable asynchronous computation.  This class provides a base
@@ -67,6 +60,9 @@ import java.util.concurrent.locks.LockSupport;
  * @since 1.5
  * @author Doug Lea
  * @param <V> The result type returned by this FutureTask's {@code get} methods
+ * 1.实现RunnableFuture，既可以运行也可以获取结果
+ * 2.封装private Callable<V> callable;在run方法中执行Callable的call方法
+ * 3.get（）时如果还未执行完毕，则get（）线程加入到FutureTask的等待队列，等待结果执行完毕。
  */
 public class FutureTask<V> implements RunnableFuture<V> {
     /*

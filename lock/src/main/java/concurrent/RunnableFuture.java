@@ -35,9 +35,6 @@
 
 package concurrent;
 
-import java.util.concurrent.Executor;
-import java.util.concurrent.Future;
-import java.util.concurrent.FutureTask;
 
 /**
  * A {@link Future} that is {@link Runnable}. Successful execution of
@@ -48,6 +45,7 @@ import java.util.concurrent.FutureTask;
  * @since 1.6
  * @author Doug Lea
  * @param <V> The result type returned by this Future's {@code get} method
+ * 1.实现Runnable和Future接口负责运行和从运行中获取结果。
  */
 public interface RunnableFuture<V> extends Runnable, Future<V> {
     /**
