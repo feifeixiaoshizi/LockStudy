@@ -335,6 +335,14 @@ import concurrent.locks.ReentrantLock;
  *
  * @author Doug Lea
  * @since 1.5
+ * 线程中断：
+ * 1.中断时协作机制，中断作用分为两个角度：阻塞和非阻塞，非阻塞不受影响，阻塞会被唤醒，进入异常流程。
+ * 2.处理中断分为4种
+ * a：直接声明异常
+ * b：捕获异常然后再抛出,捕获了InterruptedException后线程的中断状态就变为了false。（****）
+ * c：不能抛出时，调用interupt（），保留中断状态
+ * d：不能直接抛出异常时，捕获异常，调用interrupt（）保留中断状态，并转换为运行时异常抛出。
+ *
  */
 public class ThreadPoolExecutor extends AbstractExecutorService {
     /**
@@ -619,6 +627,9 @@ public class ThreadPoolExecutor extends AbstractExecutorService {
      * 2.主要执行runWorker(this);方法来负责接收一个一个的Runnable任务和控制线程的存活时间。
      * 3.线程的存活时间在于run方法执行多长时间，可以在run方法中执行循环让线程存活时间变长。
      * 4.每个Worker对应一个线程
+     * 5.维护了中断，以及根据AbstractQueuedSynchronizer的lock方法判断0线程是否处于空闲状态
+     * 6.继承自AbstractQueuedSynchronizer而是不是只用ReetrantLock，是为了使用lock来表示是否在工作，
+     * 如果可以重入，则就无法判断是否在工作。只有工作时可以lock。
      */
     private final class Worker
             extends AbstractQueuedSynchronizer
@@ -683,6 +694,9 @@ public class ThreadPoolExecutor extends AbstractExecutorService {
             return true;
         }
 
+        /**
+         * lock方法的在作用，每次Worker执行任务时先进行lock，执行完毕后再进行unlock。
+         */
         public void lock() {
             acquire(1);
         }
@@ -701,6 +715,7 @@ public class ThreadPoolExecutor extends AbstractExecutorService {
 
         void interruptIfStarted() {
             Thread t;
+            //根据State确定线程是否开启了来执行线程中断，开启之后才能执行线程的中断操作。
             if (getState() >= 0 && (t = thread) != null && !t.isInterrupted()) {
                 try {
                     t.interrupt();
@@ -839,6 +854,8 @@ public class ThreadPoolExecutor extends AbstractExecutorService {
         try {
             for (Worker w : workers) {
                 Thread t = w.thread;
+                // w.tryLock()为true表示是个空闲线程，没有在执行任务而是在获取任务。因为
+                //正在执行任务的worker已经lock了，在tryLock时返回为false。（******）
                 if (!t.isInterrupted() && w.tryLock()) {
                     try {
                         //中断线程，阻塞的线程会通过异常被唤醒。（****）
@@ -1124,9 +1141,11 @@ public class ThreadPoolExecutor extends AbstractExecutorService {
 
             try {
                 //2.线程中断时阻塞在这里，这里会通过线程中断打断阻塞，进入异常中，继续执行循环
+                //
                 Runnable r = timed ?
                         workQueue.poll(keepAliveTime, TimeUnit.NANOSECONDS) :
                         workQueue.take();
+                //如果是timed为true，则设置等待时间，如果是false，则调用take一直等待有任务。
                 if (r != null)
                     return r;
                 timedOut = true;
@@ -1181,6 +1200,7 @@ public class ThreadPoolExecutor extends AbstractExecutorService {
      * 线程的退出一定时线程中的run（）方法执行了完毕了。
      * 1.run（）方法阻塞时退出，要想让线程退出就必须打破它的阻塞，通过interupt（）让他从阻塞到执行状态，正常执行完毕。
      * 2.run（）方法非阻塞时退出，如果是循环退出循环等待run（）执行完毕就可以了。
+     * 3.在向线程池提交任务Runnable时要确保该Runnable可以正常的执行完毕，不要搞个死循环导致线程不能被回收。（****）
      */
     final void runWorker(Worker w) {
         Thread wt = Thread.currentThread();
@@ -1190,6 +1210,7 @@ public class ThreadPoolExecutor extends AbstractExecutorService {
         boolean completedAbruptly = true;
         try {
             while (task != null || (task = getTask()) != null) {
+                //开始执行task时先lock，根据lock状态就可以判断线程是否空闲是在在执行任务。（****）
                 w.lock();
                 // If pool is stopping, ensure thread is interrupted;
                 // if not, ensure thread is not interrupted.  This
@@ -1220,6 +1241,7 @@ public class ThreadPoolExecutor extends AbstractExecutorService {
                 } finally {
                     task = null;
                     w.completedTasks++;
+                    //执行完毕之后unlock
                     w.unlock();
                 }
             }
