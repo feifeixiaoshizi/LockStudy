@@ -343,6 +343,13 @@ import concurrent.locks.ReentrantLock;
  * c：不能抛出时，调用interupt（），保留中断状态
  * d：不能直接抛出异常时，捕获异常，调用interrupt（）保留中断状态，并转换为运行时异常抛出。
  *
+ * Thread的：
+ * 1.中断
+ * 2.状态（声明周期 started -runnalbe --running -blocking -died）
+ * 3.线程安全
+ * 4.线程间通信
+ * 5.线程存活：run（）方法一直执行：A：阻塞执行  B：循环执行
+ * 6.线程属性：ThreadLocal 优先级 线程名字
  */
 public class ThreadPoolExecutor extends AbstractExecutorService {
     /**
@@ -630,6 +637,12 @@ public class ThreadPoolExecutor extends AbstractExecutorService {
      * 5.维护了中断，以及根据AbstractQueuedSynchronizer的lock方法判断0线程是否处于空闲状态
      * 6.继承自AbstractQueuedSynchronizer而是不是只用ReetrantLock，是为了使用lock来表示是否在工作，
      * 如果可以重入，则就无法判断是否在工作。只有工作时可以lock。
+     * 7.Worker的作用：
+     *   7.1 封装了线程，对线程的中断进行控制。（通过State的值判断线程的开启状态）
+     *   7.2 封装了线程，负责执行第一个任务和对列中的任务。
+     *   7.3 封装了线程，负责判断线程的工作状态。（空闲，执行任务） （通过 lock 和unlock 以及trylock）
+     *   7.4 记录完成的任务数量。（completedTasks）
+     *   7.5 Worker封装线程，线程运行Worker本身。
      */
     private final class Worker
             extends AbstractQueuedSynchronizer
@@ -642,10 +655,12 @@ public class ThreadPoolExecutor extends AbstractExecutorService {
 
         /**
          * Thread this worker is running in.  Null if factory fails.
+         * 构建Worker时创建的线程
          */
         final Thread thread;
         /**
          * Initial task to run.  Possibly null.
+         * 构建Worker时的任务。
          */
         Runnable firstTask;
         /**
