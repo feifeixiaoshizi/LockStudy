@@ -35,7 +35,7 @@
 
 package concurrent;
 
-
+import concurrent.locks.LockSupport;
 
 /**
  * A cancellable asynchronous computation.  This class provides a base
@@ -94,13 +94,13 @@ public class FutureTask<V> implements RunnableFuture<V> {
      * NEW -> INTERRUPTING -> INTERRUPTED
      */
     private volatile int state;
-    private static final int NEW          = 0;
-    private static final int COMPLETING   = 1;
-    private static final int NORMAL       = 2;
-    private static final int EXCEPTIONAL  = 3;
-    private static final int CANCELLED    = 4;
-    private static final int INTERRUPTING = 5;
-    private static final int INTERRUPTED  = 6;
+    private static final int NEW          = 0;//开始
+    private static final int COMPLETING   = 1;//完成
+    private static final int NORMAL       = 2;//正常
+    private static final int EXCEPTIONAL  = 3;//异常
+    private static final int CANCELLED    = 4;//取消
+    private static final int INTERRUPTING = 5;//中断ing
+    private static final int INTERRUPTED  = 6;//中断完毕
 
     /** The underlying callable; nulled out after running */
     private Callable<V> callable;
@@ -165,6 +165,16 @@ public class FutureTask<V> implements RunnableFuture<V> {
         return state != NEW;
     }
 
+    /**
+     *
+     * @param mayInterruptIfRunning {@code true} if the thread executing this
+     * task should be interrupted; otherwise, in-progress tasks are allowed
+     * to complete
+     * @return
+     * 1.未开始执行的（√）
+     * 2.执行中的并阻塞（√）
+     * 3.执行中未阻塞的（X）
+     */
     public boolean cancel(boolean mayInterruptIfRunning) {
         if (!(state == NEW &&
               U.compareAndSwapInt(this, STATE, NEW,
@@ -274,7 +284,7 @@ public class FutureTask<V> implements RunnableFuture<V> {
                     setException(ex);
                 }
                 if (ran)
-                    set(result);
+                    set(result);//执行完毕后设置值并设置状态（*****）
             }
         } finally {
             // runner must be non-null until state is settled to

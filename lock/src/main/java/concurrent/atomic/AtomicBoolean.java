@@ -141,7 +141,8 @@ public class AtomicBoolean implements java.io.Serializable {
 
     /**
      * Atomically sets to the given value and returns the previous value.
-     *
+     * 复合操作：读取 + 设置 一步完成
+     * （单独的读取或者设置都是原子性的操作，但是两个原子性的结合在一起就不是一个原子性操作了）
      * @param newValue the new value
      * @return the previous value
      */

@@ -49,8 +49,15 @@ package concurrent.atomic;
  */
 public class AtomicStampedReference<V> {
 
+    /**
+     * 静态内部类，里面变量都是final修饰为了保证线程安全。
+     * 给refrence添加一个额外的stamp作为它的唯一标识。
+     * @param <T>
+     */
     private static class Pair<T> {
+        //线程安全
         final T reference;
+        //线程安全
         final int stamp;
         private Pair(T reference, int stamp) {
             this.reference = reference;
@@ -61,6 +68,7 @@ public class AtomicStampedReference<V> {
         }
     }
 
+    //volatile修饰引用类型变量时，volatile仅仅对引用变量本身器作用，引用变量的内部的字段变化时不起作用。（***）
     private volatile Pair<V> pair;
 
     /**
