@@ -63,6 +63,11 @@ import concurrent.locks.LockSupport;
  * 1.实现RunnableFuture，既可以运行也可以获取结果
  * 2.封装private Callable<V> callable;在run方法中执行Callable的call方法
  * 3.get（）时如果还未执行完毕，则get（）线程加入到FutureTask的等待队列，等待结果执行完毕。
+ * 4.定义了WaitNode负责挂起线程。
+ * 5.定义了状态state描述当前任务的执行状态。
+ * 6. 封装了 private Callable<V> callable;负责执行call（）方法
+ *    封装了private Object outcome;获取call（）方法的结果。
+ * 7. 取消就是根据状态来决定Callable的call（）方法是否还能执行，取消仅仅能取消未开始在执行的和已经执行但是处于阻塞状态的。
  */
 public class FutureTask<V> implements RunnableFuture<V> {
     /*
@@ -92,6 +97,7 @@ public class FutureTask<V> implements RunnableFuture<V> {
      * NEW -> COMPLETING -> EXCEPTIONAL
      * NEW -> CANCELLED
      * NEW -> INTERRUPTING -> INTERRUPTED
+     * 任务的状态，根据状态决定call方法是否可以执行。
      */
     private volatile int state;
     private static final int NEW          = 0;//开始
@@ -103,12 +109,15 @@ public class FutureTask<V> implements RunnableFuture<V> {
     private static final int INTERRUPTED  = 6;//中断完毕
 
     /** The underlying callable; nulled out after running */
+    //真正的任务对象，封装了call方法
     private Callable<V> callable;
     /** The result to return or exception to throw from get() */
+    //接收结果
     private Object outcome; // non-volatile, protected by state reads/writes
     /** The thread running the callable; CASed during run() */
     private volatile Thread runner;
     /** Treiber stack of waiting threads */
+    //获取结果的等待队列，负责挂起线程
     private volatile WaitNode waiters;
 
     /**
@@ -171,9 +180,9 @@ public class FutureTask<V> implements RunnableFuture<V> {
      * task should be interrupted; otherwise, in-progress tasks are allowed
      * to complete
      * @return
-     * 1.未开始执行的（√）
-     * 2.执行中的并阻塞（√）
-     * 3.执行中未阻塞的（X）
+     * 1.未开始执行的（√），通过判断任务状态
+     * 2.执行中的并阻塞（√），通过线程中断打断阻塞。
+     * 3.执行中未阻塞的（X），无法阻止执行了。
      */
     public boolean cancel(boolean mayInterruptIfRunning) {
         if (!(state == NEW &&
@@ -198,6 +207,8 @@ public class FutureTask<V> implements RunnableFuture<V> {
 
     /**
      * @throws CancellationException {@inheritDoc}
+     * 获取结果，如果结果还未完成，则把获取结果的线程添加到阻塞队列，
+     * 挂起当前线程知道运行完毕得出了结果。
      */
     public V get() throws InterruptedException, ExecutionException {
         int s = state;
