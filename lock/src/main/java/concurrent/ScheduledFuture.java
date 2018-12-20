@@ -35,9 +35,6 @@
 
 package concurrent;
 
-import java.util.concurrent.Delayed;
-import java.util.concurrent.Future;
-import java.util.concurrent.ScheduledExecutorService;
 
 /**
  * A delayed result-bearing action that can be cancelled.

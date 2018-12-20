@@ -35,9 +35,6 @@
 
 package concurrent;
 
-import java.util.concurrent.FutureTask;
-import java.util.concurrent.RunnableFuture;
-import java.util.concurrent.ScheduledFuture;
 
 /**
  * A {@link ScheduledFuture} that is {@link Runnable}. Successful
@@ -55,8 +52,9 @@ public interface RunnableScheduledFuture<V> extends RunnableFuture<V>, Scheduled
      * Returns {@code true} if this task is periodic. A periodic task may
      * re-run according to some schedule. A non-periodic task can be
      * run only once.
-     *
+     *periodic 周期性的
      * @return {@code true} if this task is periodic
+     * 是否周期性任务
      */
     boolean isPeriodic();
 }

@@ -141,6 +141,8 @@ import java.util.concurrent.TimeUnit;
  *
  * @since 1.5
  * @author Doug Lea
+ * 接口负责扩展功能
+ *
  */
 public interface ExecutorService extends Executor {
 

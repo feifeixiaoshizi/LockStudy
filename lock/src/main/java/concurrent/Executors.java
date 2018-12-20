@@ -72,6 +72,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  *
  * @since 1.5
  * @author Doug Lea
+ * 负责提供便利的使用方式（*****）
  */
 public class Executors {
 

@@ -47,40 +47,40 @@ import java.util.concurrent.RejectedExecutionException;
  * instead of explicitly creating threads. For example, rather than
  * invoking {@code new Thread(new RunnableTask()).start()} for each
  * of a set of tasks, you might use:
- *
+ * <p>
  * <pre> {@code
  * Executor executor = anExecutor();
  * executor.execute(new RunnableTask1());
  * executor.execute(new RunnableTask2());
  * ...}</pre>
- *
+ * <p>
  * However, the {@code Executor} interface does not strictly require
  * that execution be asynchronous. In the simplest case, an executor
  * can run the submitted task immediately in the caller's thread:
- *
+ * <p>
  * <pre> {@code
  * class DirectExecutor implements Executor {
  *   public void execute(Runnable r) {
  *     r.run();
  *   }
  * }}</pre>
- *
+ * <p>
  * More typically, tasks are executed in some thread other than the
  * caller's thread.  The executor below spawns a new thread for each
  * task.
- *
+ * <p>
  * <pre> {@code
  * class ThreadPerTaskExecutor implements Executor {
  *   public void execute(Runnable r) {
  *     new Thread(r).start();
  *   }
  * }}</pre>
- *
+ * <p>
  * Many {@code Executor} implementations impose some sort of
  * limitation on how and when tasks are scheduled.  The executor below
  * serializes the submission of tasks to a second executor,
  * illustrating a composite executor.
- *
+ * <p>
  * <pre> {@code
  * class SerialExecutor implements Executor {
  *   final Queue<Runnable> tasks = new ArrayDeque<>();
@@ -112,20 +112,35 @@ import java.util.concurrent.RejectedExecutionException;
  *     }
  *   }
  * }}</pre>
- *
+ * <p>
  * The {@code Executor} implementations provided in this package
  * implement {@link ExecutorService}, which is a more extensive
  * interface.  The {@link ThreadPoolExecutor} class provides an
  * extensible thread pool implementation. The {@link Executors} class
  * provides convenient factory methods for these Executors.
- *
+ * <p>
  * <p>Memory consistency effects: Actions in a thread prior to
  * submitting a {@code Runnable} object to an {@code Executor}
  * <a href="package-summary.html#MemoryVisibility"><i>happen-before</i></a>
  * its execution begins, perhaps in another thread.
  *
- * @since 1.5
  * @author Doug Lea
+ * @since 1.5
+ * 接口继承关系：
+ * java.util.concurrent.Executor
+ * java.util.concurrent.ExecutorService
+ * java.util.concurrent.ScheduledExecutorService（扩展延时功能）
+ * 抽象类继承关系：
+ * java.util.concurrent.AbstractExecutorService (implements java.util.concurrent.ExecutorService)
+ * java.util.concurrent.ThreadPoolExecutor
+ * java.util.concurrent.ScheduledThreadPoolExecutor (implements java.util.concurrent.ScheduledExecutorService)
+ * （继承自ThreadPoolExecutor实现作为线程池应该有的基础功能，实现ScheduledExecutorService实现自己要扩展的功能）
+ *
+ * 接口负责扩展功能，抽象类负责形成上下级关系，实现复用不变的部分，扩展新增的功能。
+ * 接口负责：自己独特的功能
+ * 抽象类：负责大家都有的基础功能。
+ * 抽象类+接口===》扩展
+ *
  */
 public interface Executor {
 
@@ -136,8 +151,8 @@ public interface Executor {
      *
      * @param command the runnable task
      * @throws RejectedExecutionException if this task cannot be
-     * accepted for execution
-     * @throws NullPointerException if command is null
+     *                                    accepted for execution
+     * @throws NullPointerException       if command is null
      */
     void execute(Runnable command);
 }

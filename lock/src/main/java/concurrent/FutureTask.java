@@ -36,6 +36,9 @@
 package concurrent;
 
 import concurrent.locks.LockSupport;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.ExecutionException;
+
 
 /**
  * A cancellable asynchronous computation.  This class provides a base
@@ -207,8 +210,6 @@ public class FutureTask<V> implements RunnableFuture<V> {
 
     /**
      * @throws CancellationException {@inheritDoc}
-     * 获取结果，如果结果还未完成，则把获取结果的线程添加到阻塞队列，
-     * 挂起当前线程知道运行完毕得出了结果。
      */
     public V get() throws InterruptedException, ExecutionException {
         int s = state;
@@ -220,7 +221,7 @@ public class FutureTask<V> implements RunnableFuture<V> {
     /**
      * @throws CancellationException {@inheritDoc}
      */
-    public V get(long timeout, TimeUnit unit)
+    public V get(long timeout,TimeUnit unit)
         throws InterruptedException, ExecutionException, TimeoutException {
         if (unit == null)
             throw new NullPointerException();
