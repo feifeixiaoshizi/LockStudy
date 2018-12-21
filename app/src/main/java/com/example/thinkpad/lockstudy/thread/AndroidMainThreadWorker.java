@@ -3,8 +3,10 @@ package com.example.thinkpad.lockstudy.thread;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
+import android.support.annotation.NonNull;
 
 import java.util.concurrent.Callable;
+import java.util.concurrent.FutureTask;
 import java.util.concurrent.TimeUnit;
 
 public class AndroidMainThreadWorker extends AbstractExecuteService implements DelayAsyncExecuteService {
@@ -37,7 +39,7 @@ public class AndroidMainThreadWorker extends AbstractExecuteService implements D
 
     @Override
     public Cancelable execute(Runnable runnable, long delay, TimeUnit timeUnit) {
-        FutureCancelableRunnable cancelableRunnable =  convert(runnable);
+        FutureCancelableRunnable cancelableRunnable = convert(runnable);
         Message message = Message.obtain(mainHandler, cancelableRunnable);
         message.obj = runnable;
         long delayTime = timeUnit.toMillis(delay);
@@ -47,7 +49,65 @@ public class AndroidMainThreadWorker extends AbstractExecuteService implements D
 
     @Override
     public Cancelable execute(Runnable runnable, long delay, long perodic, TimeUnit timeUnit) {
-        return null;
+        PeriodicRunnable<Void> periodicRunnable = new PeriodicRunnable<Void>(runnable, null, delay,
+                perodic, timeUnit);
+        executePeriodic(periodicRunnable);
+        return periodicRunnable;
+    }
+
+    private <V> void executePeriodic(PeriodicRunnable<V> periodicRunnable) {
+        Message message = Message.obtain(mainHandler, periodicRunnable);
+        message.obj = periodicRunnable;
+        long delayTime = periodicRunnable.timeUnit.toMillis(periodicRunnable.delay);
+        mainHandler.sendMessageDelayed(message, delayTime);
+    }
+
+    /**
+     * 实现了android的重复执行功能
+     *
+     * @param <V>
+     */
+    private class PeriodicRunnable<V> extends FutureTask<V> implements Cancelable {
+        private long delay;
+        private long perodic;
+        private TimeUnit timeUnit;
+
+        public PeriodicRunnable(@NonNull Callable<V> callable, long delay, long perodic, TimeUnit timeUnit) {
+            super(callable);
+            this.delay = delay;
+            this.perodic = perodic;
+            this.timeUnit = timeUnit;
+        }
+
+        public PeriodicRunnable(@NonNull Runnable runnable, V result, long delay, long perodic,
+                                TimeUnit timeUnit) {
+            super(runnable, result);
+            this.delay = delay;
+            this.perodic = perodic;
+            this.timeUnit = timeUnit;
+        }
+
+        public PeriodicRunnable(@NonNull Callable<V> callable) {
+            super(callable);
+        }
+
+        @Override
+        public void run() {
+            if (super.runAndReset()) {
+                this.delay = perodic;
+                executePeriodic(this);
+            }
+        }
+
+        @Override
+        public void cancel() {
+            this.cancel(true);
+        }
+
+        @Override
+        public boolean isCanceled() {
+            return this.isCancelled();
+        }
     }
 
     private <T> Callable<T> wapperCallable(Callable<T> callable, CallableListener<T> callableListener) {

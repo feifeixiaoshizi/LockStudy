@@ -41,5 +41,74 @@ public class Dispatcher {
         return singleThreadWorker;
     }
 
+  /*  public static  <V> Builder<V> newBuilder(){
+        return new Builder();
+    }
+    public void test(){
+        newBuilder().setRunnable(new Runnable() {
+            @Override
+            public void run() {
+
+            }
+        }).runUiThread().excute();
+    }
+
+    public static class Builder<V>{
+        //runnable和callable互斥两者只能存在一个
+        private Runnable runnable;
+        private Callable<V> callable;
+        private AsyncExecueService.CallableListener<V> callableListener;
+        private int delay;
+        private boolean callbackUIThread;
+        private boolean runUIThread;
+        private boolean runSingleThread;
+
+
+        public Builder setRunnable(Runnable runnable) {
+            this.runnable = runnable;
+            this.callable = null;
+            return this;
+        }
+
+        public Builder setDelay(int delay) {
+            this.delay = delay;
+            return this;
+        }
+
+        public Builder<V> setCallable(Callable<V> callable) {
+            this.callable = callable;
+            this.runnable=null;
+            return this;
+        }
+
+        public Builder<V> setCallableListener(AsyncExecueService.CallableListener<V> callableListener) {
+            this.callableListener = callableListener;
+            return this;
+        }
+        public Builder runUiThread(){
+            runUIThread = true;
+            return this;
+        }
+
+        *//**
+         *  线程切换
+         * 延时
+         * 任务
+         * 同步 异步（listener ，）
+         * 单个线程
+         *
+         * @return
+         *//*
+        public Cancelable excute(){
+            if(runUIThread){
+                return Dispatcher.androidMainThreadExecuteService().execute(runnable);
+            }
+
+            return null;
+        }
+
+
+    }*/
+
 
 }
