@@ -22,16 +22,15 @@ public abstract class AbstractExecuteService implements ExecuteService {
     }
 
     protected FutureCancelableRunnable convert(Runnable runnable) {
-        FutureCancelableRunnable cancelableRunnable = FutureCancelableRunnable.decorate(runnable);
+        FutureCancelableRunnable cancelableRunnable = FutureCancelableRunnable
+                .decorate(runnable);
         return cancelableRunnable;
     }
 
     protected <T> FutureCancelableRunnableFuture<T> convert(Callable<T> callable) {
-        FutureCancelableRunnableFuture<T> cancelableRunnable = FutureCancelableRunnableFuture
-                .decorate(callable);
+        FutureCancelableRunnableFuture<T> cancelableRunnable = FutureCancelableRunnableFuture.decorate(callable);
         return cancelableRunnable;
     }
-
 
     protected abstract void run(Runnable runnable);
 

@@ -71,6 +71,8 @@ import java.util.concurrent.ExecutionException;
  * 6. 封装了 private Callable<V> callable;负责执行call（）方法
  *    封装了private Object outcome;获取call（）方法的结果。
  * 7. 取消就是根据状态来决定Callable的call（）方法是否还能执行，取消仅仅能取消未开始在执行的和已经执行但是处于阻塞状态的。
+ *8. 执行完毕后会设置Callable的为null，不能重复执行，要想重复执行
+ *   就得使用runAndReset（）方法
  */
 public class FutureTask<V> implements RunnableFuture<V> {
     /*

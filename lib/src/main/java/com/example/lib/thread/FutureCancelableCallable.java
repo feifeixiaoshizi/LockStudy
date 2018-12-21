@@ -2,18 +2,18 @@ package com.example.lib.thread;
 
 import java.util.concurrent.Callable;
 
-
+@Deprecated
 public class FutureCancelableCallable<T> extends FutureCancelable<T> implements Callable<T> {
     private Callable<T> callable;
-    private ExecuteService.CallableListener<T> callback;
+    private AsyncExecueService.CallableListener<T> callback;
 
-    public FutureCancelableCallable(Callable<T> callable, ExecuteService.CallableListener<T> callback) {
+    public FutureCancelableCallable(Callable<T> callable, AsyncExecueService.CallableListener<T> callback) {
         this.callable = callable;
         this.callback = callback;
     }
 
     public static <T> FutureCancelableCallable<T> decorate(Callable<T> runnable,
-                                                           ExecuteService.CallableListener<T> callBack) {
+                                                           AsyncExecueService.CallableListener<T> callBack) {
         return new FutureCancelableCallable(runnable, callBack);
     }
 

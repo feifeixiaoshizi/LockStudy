@@ -29,11 +29,6 @@ public class Dispatcher {
         return new AsyncWorker(scheduledExecutorService);
     }
 
-    private static final AndroidMainThreadWorker androidMainThreadWorker = new AndroidMainThreadWorker();
-
-    public static DelayAsyncExecuteService androidMainThreadExecuteService() {
-        return androidMainThreadWorker;
-    }
 
     public static final SingleThreadWorker singleThreadWorker = new SingleThreadWorker();
 
@@ -91,14 +86,14 @@ public class Dispatcher {
         }
 
         *//**
-         *  线程切换
-         * 延时
-         * 任务
-         * 同步 异步（listener ，）
-         * 单个线程
-         *
-         * @return
-         *//*
+     *  线程切换
+     * 延时
+     * 任务
+     * 同步 异步（listener ，）
+     * 单个线程
+     *
+     * @return
+     *//*
         public Cancelable excute(){
             if(runUIThread){
                 return Dispatcher.androidMainThreadExecuteService().execute(runnable);

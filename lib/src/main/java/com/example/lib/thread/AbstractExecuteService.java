@@ -1,26 +1,37 @@
 package com.example.lib.thread;
 
 import java.util.concurrent.Callable;
-import java.util.concurrent.Future;
 
+/**
+ * ExecuteService的基类实现execute的功能，父类主要负责装饰，子类负责具体的执行功能
+ */
 public abstract class AbstractExecuteService implements ExecuteService {
+
     @Override
     public Cancelable execute(Runnable runnable) {
-        FutureCancelableRunnable cancelableRunnable = FutureCancelableRunnable.decorate(runnable);
-        Future scheduledFuture = run(runnable);
-        cancelableRunnable.setFuture(scheduledFuture);
-        return cancelableRunnable;
-    }
-
-    @Override
-    public <T> Cancelable execute(Callable<T> callable, CallableListener<T> callBack) {
-        FutureCancelableCallable<T> cancelable = FutureCancelableCallable.decorate(callable, callBack);
-        Future<T> future = run(cancelable);
-        cancelable.setFuture(future);
+        FutureCancelableRunnable cancelable = convert(runnable);
+        run(cancelable);
         return cancelable;
     }
 
-    protected abstract Future run(Runnable runnable);
+    @Override
+    public <V> FutureCancelable<V> execute(Callable<V> callable) {
+        FutureCancelableRunnableFuture<V> cancelable = convert(callable);
+        run(cancelable);
+        return cancelable;
+    }
 
-    protected abstract <T> Future<T> run(Callable<T> callable);
+    protected FutureCancelableRunnable convert(Runnable runnable) {
+        FutureCancelableRunnable cancelableRunnable = FutureCancelableRunnable
+                .decorate(runnable);
+        return cancelableRunnable;
+    }
+
+    protected <T> FutureCancelableRunnableFuture<T> convert(Callable<T> callable) {
+        FutureCancelableRunnableFuture<T> cancelableRunnable = FutureCancelableRunnableFuture.decorate(callable);
+        return cancelableRunnable;
+    }
+
+    protected abstract void run(Runnable runnable);
+
 }

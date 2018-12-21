@@ -1,4 +1,4 @@
-package com.example.thinkpad.lockstudy.thread;
+package com.example.lib.thread;
 
 import java.util.concurrent.Callable;
 import java.util.concurrent.FutureTask;

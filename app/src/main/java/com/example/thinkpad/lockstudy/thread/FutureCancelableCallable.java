@@ -1,6 +1,7 @@
 package com.example.thinkpad.lockstudy.thread;
 
 import java.util.concurrent.Callable;
+
 @Deprecated
 public class FutureCancelableCallable<T> extends FutureCancelable<T> implements Callable<T> {
     private Callable<T> callable;

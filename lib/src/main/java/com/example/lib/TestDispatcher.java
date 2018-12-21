@@ -5,9 +5,11 @@ import com.example.lib.thread.Dispatcher;
 import com.example.lib.thread.ExecuteService;
 import com.example.lib.thread.FutureCancelable;
 
+import java.util.Date;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -15,9 +17,8 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public class TestDispatcher {
     public static void main(String[] args) throws Exception {
-        //testRunnable();
-        testCallable();
-
+        testRunnable();
+        //testCallable();
     }
 
     public static int n = 0;
@@ -34,30 +35,22 @@ public class TestDispatcher {
                     return "call:" + n;
                 }
             };
-            cancelable = Dispatcher.delayWorker().execute(callable, new ExecuteService.CallableListener<String>() {
-                @Override
-                public void onFinish(String s) {
-                    //System.out.println("ThreadName:" + Thread.currentThread().getName()+"onfinish:"+n);
-                }
-            });
-
-
+            cancelable = Dispatcher.delayExecuteService().execute(callable);
         }
     }
 
+    private static  int count  = 0;
+    private static Cancelable cancelable;
     private static void testRunnable() {
-        Runnable runnable;
-        Cancelable cancelable;
-        for (int i = 0; i < 1000; i++) {
-            runnable = new Runnable() {
-                @Override
-                public void run() {
-                    System.out.println("ThreadName:" + Thread.currentThread().getName());
-                }
-            };
-            cancelable = Dispatcher.delayWorker().execute(runnable);
-            cancelable.cancel();
-        }
+     cancelable =  Dispatcher.delayExecuteService().execute(new Runnable() {
+          @Override
+          public void run() {
+              if(count>10){
+                  cancelable.cancel();
+              }
+             System.out.println("time:"+new Date(System.currentTimeMillis()).toString()+"count:"+count++);
+          }
+      },1,2, TimeUnit.SECONDS);
     }
 
 
