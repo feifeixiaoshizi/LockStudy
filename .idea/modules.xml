@@ -4,8 +4,8 @@
     <modules>
       <module fileurl="file://$PROJECT_DIR$/LockStudy.iml" filepath="$PROJECT_DIR$/LockStudy.iml" />
       <module fileurl="file://$PROJECT_DIR$/app/app.iml" filepath="$PROJECT_DIR$/app/app.iml" />
-      <module fileurl="file://$PROJECT_DIR$/lib/lib.iml" filepath="$PROJECT_DIR$/lib/lib.iml" />
       <module fileurl="file://$PROJECT_DIR$/lock/lock.iml" filepath="$PROJECT_DIR$/lock/lock.iml" />
+      <module fileurl="file://$PROJECT_DIR$/thread/lib.iml" filepath="$PROJECT_DIR$/thread/lib.iml" />
     </modules>
   </component>
 </project>

@@ -25,6 +25,12 @@ public class Dispatcher {
         return new DelayWorker(scheduledExecutorService);
     }
 
+    public final static AsyncExecueService asyncExecueService = new AsyncWorker();
+
+    public static AsyncExecueService asyncExecueService() {
+        return asyncExecueService;
+    }
+
     public static AsyncExecueService asyncExecueService(ScheduledExecutorService scheduledExecutorService) {
         return new AsyncWorker(scheduledExecutorService);
     }
